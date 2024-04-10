@@ -1,7 +1,9 @@
 import numpy as np
-from sklearn.metrics import log_loss
+from sklearn.metrics import log_loss, f1_score, accuracy_score
+from tqdm import tqdm
 
 from model import Model
+from utils import save_model
 
 
 class Sane:
@@ -13,18 +15,22 @@ class Sane:
         self.neuron_connections = hyperparameters["neuron_connections"]
         self.input_neurons = hyperparameters["input_neurons"]
         self.output_neurons = hyperparameters["output_neurons"]
+        self.epoch_with_no_progress = hyperparameters["epoch_with_no_progress"]
 
-    def train(self, x_train, y_train):
+    def train(self, x_train, y_train, x_test, y_test):
         population = self.generate_population()
         best_loss = np.inf
         curr_epoch = 0
+        epoch_last_save = 0
+
+        pbar = tqdm(total=self.epoch)
         while curr_epoch < self.epoch:
             # 1. Обновление приспособленности нейронов
             neurons_fitness = np.zeros(self.population_size)
             # Количество вхождений нейронов в ИНС
             neurons_usage = np.ones(self.population_size)
 
-            for _ in range(200):
+            for _ in range(500):
                 # 2. Случайный выбор нейронов для сети
                 neurons_in_nn = np.random.randint(0, self.population_size, size=self.hidden_neurons)
                 # Обновление количества вхождений для каждого нейрона
@@ -37,11 +43,18 @@ class Sane:
                 network_predict = model.forward_propagation(x_train)
                 loss_nn = log_loss(y_train, network_predict)
                 if loss_nn < best_loss:
-                    print(curr_epoch, loss_nn)
+                    epoch_last_save = curr_epoch
+                    # accuracy = accuracy_score(y_true=y_train, y_pred=np.argmax(network_predict, axis=1))
+                    save_model(self.hyperparameters["model_name"], network_schema)
+                    # print(curr_epoch, loss_nn, accuracy)
                     best_loss = loss_nn
 
                 # 5. Добавление приспособленности к использованным нейронам
                 neurons_fitness = self.update_neuron_fitness(neurons_fitness, neurons_in_nn, loss_nn)
+
+            if curr_epoch - epoch_last_save > self.epoch_with_no_progress:
+                print(f"last epoch with progress: {epoch_last_save}, current epoch: {curr_epoch}, loop breaking...")
+                break
 
             # 7. Среднее значение приспособленности
             neurons_fitness /= neurons_usage
@@ -53,14 +66,14 @@ class Sane:
             # neurons_fitness = neurons_fitness[sort_ids]
 
             # 8. Одноточечный кроссинговер
-
             self.crossover(population)
 
             # Мутация
-
             self.mutation(population)
 
+            pbar.update(1)
             curr_epoch += 1
+        pbar.close()
 
     def mutation(self, population):
         # Шанс мутации индекса нейрона

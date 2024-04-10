@@ -1,4 +1,11 @@
+import os
 import numpy as np
+
+
+def save_model(model_name, array):
+    if not os.path.exists("models"):
+        os.mkdir("models")
+    np.save(f'models/{model_name}', array)
 
 
 def read_dt(filename):
