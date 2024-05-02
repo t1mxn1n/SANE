@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from graphviz import Digraph
 
 
 def save_model(model_name, array):
@@ -40,3 +41,45 @@ def softmax(x):
         for j in range(x.shape[1]):
             out[i, j] = np.exp(x[i, j]) / np.sum(np.exp(x[i]))
     return out
+
+
+def link_edges(graph, starts, ends):
+    ...
+
+
+def draw_nn(params, model):
+    graph = Digraph(comment='NN')
+
+    graph.attr(rankdir='LR', penwidth='0', ranksep='5')
+    graph.attr('node', shape='circle', style='filled')
+
+    with graph.subgraph(name='cluster1') as a:
+        a.attr(label='input layer', rank='same', nodesep='30')
+        a.node_attr.update(fillcolor='cadetblue1')
+        for i in range(params['input_neurons']):
+            a.node(f"i{i}")
+
+    with graph.subgraph(name='hidden') as b:
+        b.attr(label='hidden layer', rank='same', nodesep='30')
+        b.node_attr.update(fillcolor='cadetblue1')
+        for i in range(params['hidden_neurons']):
+            b.node(f"h{i}")
+        # b.node('h1')
+        # b.node('h2')
+        # b.node('h3')
+
+    with graph.subgraph(name='output') as c:
+        c.attr(label='output layer', rank='same', nodesep='30')
+        c.node_attr.update(fillcolor='darkseagreen1')
+        for i in range(params['input_neurons'], params['output_neurons'] + params['input_neurons']):
+            c.node(f"o{i}")
+
+    for n_ind, neuron in enumerate(model):
+        for i in range(0, len(neuron), 2):
+            if int(neuron[i]) < params['input_neurons']:
+                graph.edge(f'i{int(neuron[i])}', f'h{n_ind}', fontsize='9', labeldistance='7', constraint='true')
+            else:
+                graph.edge(f'h{n_ind}', f'o{int(neuron[i])}', fontsize='9', labeldistance='7', constraint='true')
+
+    graph.format = 'png'
+    graph.render('Graph2', view=True)

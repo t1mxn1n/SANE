@@ -1,23 +1,23 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.datasets import load_iris
+from sklearn.datasets import load_iris, load_wine
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.preprocessing import normalize
 from sklearn.utils import shuffle
 
 from sane import Sane
 from model import Model
-from utils import read_dt, save_model
+from utils import read_dt, save_model, draw_nn
 
 np.random.seed(seed=42)
 
 hyperparameters = {
     "dataset": "glass",
-    "population_size": 2000,
+    "population_size": 2500,
     "hidden_neurons": 100,
     "epoch": 1000,
-    "neuron_connections": 7,
-    "epoch_with_no_progress": 30
+    "neuron_connections": 30,
+    "epoch_with_no_progress": 20
 }
 
 
@@ -28,6 +28,9 @@ def get_dataset(dataset_name):
             x, y = data["data"], data["target"]
         case "glass":
             x, y = read_dt('glass1.dt')
+        case "wine":
+            data = load_wine()
+            x, y = data["data"], data["target"]
         case _:
             return None
     x = normalize(x, norm='max')
@@ -59,6 +62,11 @@ def run():
 
 def evaluate_model(x_test, y_test):
     best_model = np.load(f"models/{hyperparameters['model_name']}.npy")
+
+    from pprint import pprint
+    # print(best_model.shape)
+    pprint(best_model[0])
+
     nn = Model(best_model, hyperparameters)
     predictions = nn.forward_propagation(x_test)
 
@@ -67,6 +75,9 @@ def evaluate_model(x_test, y_test):
 
 
 if __name__ == '__main__':
+    h = get_hyperparams()
     run()
-    # evaluate_model(x_test, y_test)
+    model = np.load(f"models/{hyperparameters['model_name']}.npy")
+    draw_nn(hyperparameters, model)
 
+    # evaluate_model(h[1], h[3])

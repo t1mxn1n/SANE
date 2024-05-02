@@ -30,7 +30,7 @@ class Sane:
             # Количество вхождений нейронов в ИНС
             neurons_usage = np.ones(self.population_size)
 
-            for _ in range(500):
+            for _ in range(1000):
                 # 2. Случайный выбор нейронов для сети
                 neurons_in_nn = np.random.randint(0, self.population_size, size=self.hidden_neurons)
                 # Обновление количества вхождений для каждого нейрона
