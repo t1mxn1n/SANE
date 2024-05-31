@@ -3,7 +3,7 @@ from sklearn.metrics import log_loss, f1_score, accuracy_score
 from tqdm import tqdm
 
 from model import Model
-from utils import save_model
+from utils import save_model, draw_nn
 
 
 class Sane:
@@ -43,9 +43,17 @@ class Sane:
                 network_predict = model.forward_propagation(x_train)
                 loss_nn = log_loss(y_train, network_predict)
                 if loss_nn < best_loss:
-                    epoch_last_save = curr_epoch
+
                     # accuracy = accuracy_score(y_true=y_train, y_pred=np.argmax(network_predict, axis=1))
                     save_model(self.hyperparameters["model_name"], network_schema)
+                    if curr_epoch == 0 or curr_epoch - epoch_last_save > 2:
+                        save_model(f"graph_model_{curr_epoch}", network_schema, "temp/graph/models")
+                        draw_nn(self.hyperparameters,
+                                f"temp/graph/models/graph_model_{curr_epoch}",
+                                curr_epoch,
+                                save_path="temp/graph/img/")
+
+                    epoch_last_save = curr_epoch
                     # print(curr_epoch, loss_nn, accuracy)
                     best_loss = loss_nn
 

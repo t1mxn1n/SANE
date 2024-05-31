@@ -1,12 +1,15 @@
 import os
+import re
 import numpy as np
+import shutil
 from graphviz import Digraph
+import pydot
 
 
-def save_model(model_name, array):
-    if not os.path.exists("models"):
-        os.mkdir("models")
-    np.save(f'models/{model_name}', array)
+def save_model(model_name, array, dir_save="models"):
+    if not os.path.exists(dir_save):
+        os.mkdir(dir_save)
+    np.save(f'{dir_save}/{model_name}', array)
 
 
 def read_dt(filename):
@@ -47,32 +50,39 @@ def link_edges(graph, starts, ends):
     ...
 
 
-def draw_nn(params, model):
-    graph = Digraph(comment='NN')
+def draw_nn(params, model_path, epoch_num, save_path="Graph"):
+    model = np.load(f"{model_path}.npy")
+    graph = Digraph(comment='NN', strict=True)
 
-    graph.attr(rankdir='LR', penwidth='0', ranksep='5')
+    graph.attr(rankdir='LR', penwidth='0', ranksep='20')
     graph.attr('node', shape='circle', style='filled')
 
     with graph.subgraph(name='cluster1') as a:
-        a.attr(label='input layer', rank='same', nodesep='30')
-        a.node_attr.update(fillcolor='cadetblue1')
+
+        label = '< <table border="0" cellborder="1" cellspacing="10">'
         for i in range(params['input_neurons']):
-            a.node(f"i{i}")
+            # a.node(f"i{i}")
+            label += f'<tr> <td port="i{i}">i{i}</td> </tr>'
+        label += '</table> >'
+        a.attr(label=label)
+        a.node_attr.update(fillcolor='cadetblue1')
 
     with graph.subgraph(name='hidden') as b:
-        b.attr(label='hidden layer', rank='same', nodesep='30')
+        b.attr(label='hidden layer')
         b.node_attr.update(fillcolor='cadetblue1')
         for i in range(params['hidden_neurons']):
             b.node(f"h{i}")
-        # b.node('h1')
-        # b.node('h2')
-        # b.node('h3')
 
     with graph.subgraph(name='output') as c:
-        c.attr(label='output layer', rank='same', nodesep='30')
-        c.node_attr.update(fillcolor='darkseagreen1')
+
+        label = '< <table border="0" cellborder="1" cellspacing="10">'
+
         for i in range(params['input_neurons'], params['output_neurons'] + params['input_neurons']):
-            c.node(f"o{i}")
+            # c.node(f"o{i}")
+            label += f'<tr> <td port="o{i}">o{i}</td> </tr>'
+        label += '</table> >'
+        c.attr(label=label)
+        c.node_attr.update(fillcolor='darkseagreen1')
 
     for n_ind, neuron in enumerate(model):
         for i in range(0, len(neuron), 2):
@@ -82,4 +92,21 @@ def draw_nn(params, model):
                 graph.edge(f'h{n_ind}', f'o{int(neuron[i])}', fontsize='9', labeldistance='7', constraint='true')
 
     graph.format = 'png'
-    graph.render('Graph2', view=True)
+    graph.render(f'{save_path}{epoch_num}', cleanup=True)
+
+
+def clear_temp_files():
+    try:
+        shutil.rmtree("temp")
+        os.mkdir("temp")
+        os.mkdir("temp/graph")
+        os.mkdir("temp/graph/models")
+        os.mkdir("temp/graph/img")
+        print("Временные файлы очищены, запуск алгоритма...")
+    except Exception as e:
+        print(f"Ошибка при очищении временных файлов {e}")
+
+
+def extract_number(filename):
+    match = re.search(r'\d+', filename)
+    return int(match.group()) if match else float('inf')
