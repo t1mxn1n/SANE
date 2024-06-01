@@ -3,7 +3,7 @@ from sklearn.metrics import log_loss, f1_score, accuracy_score
 from tqdm import tqdm
 
 from model import Model
-from utils import save_model, draw_nn
+from utils import save_model, draw_nn, evaluate_model
 
 
 class Sane:
@@ -22,6 +22,13 @@ class Sane:
         best_loss = np.inf
         curr_epoch = 0
         epoch_last_save = 0
+
+        history = {
+            "loss_array_train": [],
+            "loss_array_test": [],
+            "acc_array_train": [],
+            "acc_array_test": [],
+        }
 
         pbar = tqdm(total=self.epoch)
         while curr_epoch < self.epoch:
@@ -46,16 +53,8 @@ class Sane:
 
                     # accuracy = accuracy_score(y_true=y_train, y_pred=np.argmax(network_predict, axis=1))
                     save_model(self.hyperparameters["model_name"], network_schema)
-                    if curr_epoch == 0 or curr_epoch - epoch_last_save > self.hyperparameters["freq_update_topology"]:
-                        save_model(f"graph_model_{curr_epoch}", network_schema, "temp/graph/models")
-                        draw_nn(self.hyperparameters,
-                                f"temp/graph/models/graph_model_{curr_epoch}",
-                                curr_epoch,
-                                x_train,
-                                y_train,
-                                x_test,
-                                y_test,
-                                save_path="temp/graph/img/g")
+                    # if curr_epoch == 0 or curr_epoch - epoch_last_save > self.hyperparameters["freq_update_topology"]:
+                        # save_model(f"graph_model_{curr_epoch}", network_schema, "temp/graph/models")
 
                     epoch_last_save = curr_epoch
                     # print(curr_epoch, loss_nn, accuracy)
@@ -64,9 +63,26 @@ class Sane:
                 # 5. Добавление приспособленности к использованным нейронам
                 neurons_fitness = self.update_neuron_fitness(neurons_fitness, neurons_in_nn, loss_nn)
 
+            if curr_epoch % self.hyperparameters["freq_update_topology"] == 0:
+                draw_nn(self.hyperparameters,
+                        f"models/{self.hyperparameters['dataset']}_model",
+                        curr_epoch,
+                        x_train,
+                        y_train,
+                        x_test,
+                        y_test,
+                        save_path="temp/graph/img/g")
+
             if curr_epoch - epoch_last_save > self.epoch_with_no_progress:
                 print(f"last epoch with progress: {epoch_last_save}, current epoch: {curr_epoch}, loop breaking...")
                 break
+
+            metrics_eval = evaluate_model(x_train, y_train, x_test, y_test, self.hyperparameters)
+
+            history["loss_array_train"].append(metrics_eval[0])
+            history["loss_array_test"].append(metrics_eval[1])
+            history["acc_array_train"].append(metrics_eval[2])
+            history["acc_array_test"].append(metrics_eval[3])
 
             # 7. Среднее значение приспособленности
             neurons_fitness /= neurons_usage
@@ -86,6 +102,7 @@ class Sane:
             pbar.update(1)
             curr_epoch += 1
         pbar.close()
+        return history
 
     def mutation(self, population):
         # Шанс мутации индекса нейрона

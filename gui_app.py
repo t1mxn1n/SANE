@@ -4,10 +4,12 @@ import threading
 import queue
 import time
 from tkinter import ttk
-from PIL import Image, ImageTk, ImageFile
+from PIL import Image, ImageTk, ImageFile, UnidentifiedImageError
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from main import run
-from utils import extract_number
+from utils import extract_number, clear_temp_files
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -18,51 +20,65 @@ class SaneApp:
         self.sane_thread = None
         self.root.title("SANE")
         self.first_start = True
+        self.hyperparameters = None
 
-        self.param0_label = ttk.Label(root, text="Набор данных:")
-        self.param0_label.pack()
+        self.param0_frame = ttk.Frame(root)
+        self.param0_frame.pack(fill='x', padx=5, pady=1)
+        self.param0_label = ttk.Label(self.param0_frame, text="Набор данных:")
+        self.param0_label.pack(side='left')
         self.param0_value = tk.StringVar()
-        self.param0_combobox = ttk.Combobox(root, textvariable=self.param0_value)
+        self.param0_combobox = ttk.Combobox(self.param0_frame, textvariable=self.param0_value, width=10)
         self.param0_combobox['values'] = ('iris', 'wine', 'glass')
         self.param0_combobox.current(0)
-        self.param0_combobox.pack()
+        self.param0_combobox.pack(side='left')
 
-        # Параметры генерации изображений
-        self.param1_label = ttk.Label(root, text="Размер популяции:")
-        self.param1_label.pack()
-        self.param1_entry = ttk.Entry(root)
-        self.param1_entry.insert(-1, '2000')
-        self.param1_entry.pack()
+        self.param1_frame = ttk.Frame(root)
+        self.param1_frame.pack(fill='x', padx=5, pady=1)
+        self.param1_label = ttk.Label(self.param1_frame, text="Размер популяции:")
+        self.param1_label.pack(side='left')
+        self.param1_entry = ttk.Entry(self.param1_frame, width=10)
+        self.param1_entry.insert(0, '2000')
+        self.param1_entry.pack(side='left')
 
-        self.param2_label = ttk.Label(root, text="Кол-во нейронов скрытого слоя:")
-        self.param2_label.pack()
-        self.param2_entry = ttk.Entry(root)
-        self.param2_entry.insert(-1, '30')
-        self.param2_entry.pack()
+        self.param2_frame = ttk.Frame(root)
+        self.param2_frame.pack(fill='x', padx=5, pady=1)
+        self.param2_label = ttk.Label(self.param2_frame, text="Кол-во нейронов скрытого слоя:")
+        self.param2_label.pack(side='left')
+        self.param2_entry = ttk.Entry(self.param2_frame, width=10)
+        self.param2_entry.insert(0, '30')
+        self.param2_entry.pack(side='left')
 
-        self.param3_label = ttk.Label(root, text="Количество эпох:")
-        self.param3_label.pack()
-        self.param3_entry = ttk.Entry(root)
+        self.param3_frame = ttk.Frame(root)
+        self.param3_frame.pack(fill='x', padx=5, pady=1)
+        self.param3_label = ttk.Label(self.param3_frame, text="Количество эпох:")
+        self.param3_label.pack(side='left')
+        self.param3_entry = ttk.Entry(self.param3_frame, width=10)
         self.param3_entry.insert(-1, '500')
-        self.param3_entry.pack()
+        self.param3_entry.pack(side='left')
 
-        self.param4_label = ttk.Label(root, text="Кол-во связей у нейрона:")
-        self.param4_label.pack()
-        self.param4_entry = ttk.Entry(root)
-        self.param4_entry.insert(-1, '5')
-        self.param4_entry.pack()
+        self.param4_frame = ttk.Frame(root)
+        self.param4_frame.pack(fill='x', padx=5, pady=1)
+        self.param4_label = ttk.Label(self.param4_frame, text="Кол-во связей у нейрона:")
+        self.param4_label.pack(side='left')
+        self.param4_entry = ttk.Entry(self.param4_frame, width=10)
+        self.param4_entry.insert(0, '5')
+        self.param4_entry.pack(side='left')
 
-        self.param5_label = ttk.Label(root, text="Кол-во эпох без обучения для остановки:")
-        self.param5_label.pack()
-        self.param5_entry = ttk.Entry(root)
-        self.param5_entry.insert(-1, '30')
-        self.param5_entry.pack()
+        self.param5_frame = ttk.Frame(root)
+        self.param5_frame.pack(fill='x', padx=5, pady=1)
+        self.param5_label = ttk.Label(self.param5_frame, text="Кол-во эпох без обучения для остановки:")
+        self.param5_label.pack(side='left')
+        self.param5_entry = ttk.Entry(self.param5_frame, width=5)
+        self.param5_entry.insert(0, '30')
+        self.param5_entry.pack(side='left')
 
-        self.param6_label = ttk.Label(root, text="Частота обновления топологии (эпохи):")
-        self.param6_label.pack()
-        self.param6_entry = ttk.Entry(root)
-        self.param6_entry.insert(-1, '5')
-        self.param6_entry.pack()
+        self.param6_frame = ttk.Frame(root)
+        self.param6_frame.pack(fill='x', padx=5, pady=1)
+        self.param6_label = ttk.Label(self.param6_frame, text="Частота обновления топологии (эпохи):")
+        self.param6_label.pack(side='left')
+        self.param6_entry = ttk.Entry(self.param6_frame, width=5)
+        self.param6_entry.insert(0, '5')
+        self.param6_entry.pack(side='left')
 
         self.start_button = ttk.Button(root, text="Запустить алгоритм", command=self.start_sane)
         self.start_button.pack()
@@ -70,9 +86,42 @@ class SaneApp:
         self.image_label = ttk.Label(root)
         self.image_label.pack()
 
-        self.report_label = ttk.Label(root, text="")
-        self.report_label.pack()
+        self.param7_label = ttk.Label(root, text="Номер эпохи:")
+        self.param7_value = tk.StringVar()
+        self.param7_combobox = ttk.Combobox(root, textvariable=self.param7_value)
+        self.change_img_button = ttk.Button(root, text="Открыть топологию", command=self.change_image)
+
+        self.reset_app_button = ttk.Button(root, text="Запусть алгоритм заного", command=self.reset_app)
+
         self.result_queue = queue.Queue()
+
+    def reset_app(self):
+
+        self.start_button.config(state='normal')
+        self.param0_combobox.config(state='normal')
+        self.param1_entry.config(state='normal')
+        self.param2_entry.config(state='normal')
+        self.param3_entry.config(state='normal')
+        self.param4_entry.config(state='normal')
+        self.param5_entry.config(state='normal')
+        self.param6_entry.config(state='normal')
+
+        self.root.after(0, lambda: self.image_label.config(image=None))
+        self.root.after(0, lambda: setattr(self.image_label, 'image', None))
+
+        self.param7_label.pack_forget()
+        self.param7_combobox.pack_forget()
+        self.change_img_button.pack_forget()
+        self.reset_app_button.pack_forget()
+
+    def change_image(self):
+        epoch = self.param7_combobox.get()
+
+        with Image.open(f"temp/graph/img_pil/{epoch}.png") as image_pil:
+            image = ImageTk.PhotoImage(image_pil)
+
+        self.root.after(0, lambda: self.image_label.config(image=image))
+        self.root.after(0, lambda: setattr(self.image_label, 'image', image))
 
     def start_sane(self):
         self.start_button.config(state='disabled')
@@ -95,7 +144,7 @@ class SaneApp:
         # Запускаем генерацию изображений в отдельном потоке
 
         try:
-            hyperparameters = {
+            self.hyperparameters = {
                 "dataset": dataset,
                 "population_size": int(population_size),
                 "hidden_neurons": int(hidden_neurons),
@@ -104,7 +153,7 @@ class SaneApp:
                 "epoch_with_no_progress": int(epoch_with_no_progress),
                 "freq_update_topology": int(freq_update_topology)
             }
-            self.sane_thread = threading.Thread(target=run, args=(hyperparameters, self.result_queue))
+            self.sane_thread = threading.Thread(target=run, args=(self.hyperparameters, self.result_queue))
             self.sane_thread.start()
 
             self.show_nn_schema()
@@ -119,22 +168,54 @@ class SaneApp:
             self.param5_entry.config(state='normal')
 
     def open_report(self):
-        # loss_train, loss_test, accuracy_train, accuracy_test
-        t = self.result_queue.get()
-        print(t)
-        new_window = tk.Toplevel(self.root)
-        new_window.title("Результат")
+        metrics_eval = self.result_queue.get()
+        graph_data = metrics_eval[4]
+        report_window = tk.Toplevel(self.root)
+        report_window.title("Результат")
+
+        figure = Figure(figsize=(12, 5), dpi=100)
+        ax_loss = figure.add_subplot(1, 2, 1)
+        ax_loss.plot(graph_data["loss_array_train"], color="blue", label="train")
+        ax_loss.plot(graph_data["loss_array_test"], color="orange", label="val")
+        ax_loss.set_xlabel("epoch")
+        ax_loss.set_ylabel("loss")
+        ax_loss.legend()
+
+        ax_accuracy = figure.add_subplot(1, 2, 2)
+        ax_accuracy.plot(graph_data["acc_array_train"], color="blue", label="train")
+        ax_accuracy.plot(graph_data["acc_array_test"], color="orange", label="val")
+        ax_accuracy.set_xlabel("epoch")
+        ax_accuracy.set_ylabel("accuracy")
+        ax_accuracy.legend()
 
         # Добавляем информацию в новое окно
-        new_label = ttk.Label(new_window, text="Результат работы")
-        new_label.pack()
+        new_label1 = ttk.Label(report_window, text=f"Loss train: {metrics_eval[0]}")
+        new_label1.pack()
 
-        new_info_label = ttk.Label(new_window, text="Дополнительная информация")
-        new_info_label.pack()
+        new_label2 = ttk.Label(report_window, text=f"Accuracy train: {metrics_eval[2]}")
+        new_label2.pack()
 
-        # Можно добавить другие виджеты по необходимости
-        new_close_button = ttk.Button(new_window, text="Закрыть", command=new_window.destroy)
-        new_close_button.pack()
+        new_label3 = ttk.Label(report_window, text=f"Loss test: {metrics_eval[1]}")
+        new_label3.pack()
+
+        new_label4 = ttk.Label(report_window, text=f"Accuracy test: {metrics_eval[3]}")
+        new_label4.pack()
+
+        new_label5 = ttk.Label(report_window, text=f"Датасет: {self.hyperparameters['dataset']}")
+        new_label5.pack()
+        new_label6 = ttk.Label(report_window, text=f"Размер популяции: {self.hyperparameters['population_size']}\n"
+                                                   f"Кол-во скрытых нейронов: {self.hyperparameters['hidden_neurons']}\n"
+                                                   f"Кол-во эпох: {self.hyperparameters['epoch']}\n"
+                                                   f"Кол-во связей нейрона: {self.hyperparameters['neuron_connections']}\n"
+                                                   f"Кол-во эпох для остановки без прогресса: {self.hyperparameters['epoch_with_no_progress']}")
+        new_label6.pack()
+
+        canvas_frame = ttk.Frame(report_window)
+        canvas_frame.pack()
+
+        canvas = FigureCanvasTkAgg(figure, master=canvas_frame)
+        canvas.get_tk_widget().pack()
+        canvas.draw()
 
     def show_nn_schema(self):
 
@@ -151,17 +232,28 @@ class SaneApp:
                 print(f"Ошибка при отображении топологии сети {e}")
                 return
 
-            with Image.open(f"temp/graph/img_pil/{images[-1]}") as image_pil:
-                image = ImageTk.PhotoImage(image_pil)
+            if images:
+                try:
+                    with Image.open(f"temp/graph/img_pil/{images[-1]}") as image_pil:
+                        image = ImageTk.PhotoImage(image_pil)
+                except UnidentifiedImageError:
+                    self.root.after(2000, self.show_nn_schema)
+                    return
 
-            self.root.after(0, lambda: self.image_label.config(image=image))
-            self.root.after(0, lambda: setattr(self.image_label, 'image', image))
+                self.root.after(0, lambda: self.image_label.config(image=image))
+                self.root.after(0, lambda: setattr(self.image_label, 'image', image))
 
-            # image_pil.close()
-
-            self.root.after(3000, self.show_nn_schema)
+            self.root.after(2000, self.show_nn_schema)
         else:
             self.open_report()
+            self.param7_label.pack()
+            images = os.listdir("temp/graph/img_pil")
+            images_checkbox = sorted([img.replace(".png", "") for img in images], key=extract_number)
+            self.param7_combobox['values'] = images_checkbox
+            self.param7_combobox.current(0)
+            self.param7_combobox.pack()
+            self.change_img_button.pack()
+            self.reset_app_button.pack(side="right")
 
 
 if __name__ == "__main__":

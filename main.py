@@ -63,14 +63,14 @@ def run(hyperparameters=None, result_queue=None):
         hyperparameters
     )
 
-    genetic.train(x_train, y_train, x_test, y_test)
+    history = genetic.train(x_train, y_train, x_test, y_test)
 
     loss_train, loss_test, accuracy_train, accuracy_test = evaluate_model(
         x_train, y_train, x_test, y_test, hyperparameters
     )
 
     if result_queue:
-        result_queue.put((loss_train, loss_test, accuracy_train, accuracy_test))
+        result_queue.put((loss_train, loss_test, accuracy_train, accuracy_test, history))
 
     return x_train, x_test, y_train, y_test
 

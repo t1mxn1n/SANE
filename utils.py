@@ -51,15 +51,18 @@ def read_dt(filename):
     return np.array(x), np.array(y)
 
 
-def link_edges(graph, starts, ends):
-    ...
-
-
 def draw_nn(params, model_path, epoch_num, x_train, y_train, x_test, y_test, save_path="Graph"):
     model = np.load(f"{model_path}.npy")
     graph = Digraph(comment='NN', strict=True)
 
-    graph.attr(rankdir='LR', penwidth='0', ranksep='20')
+    if params['hidden_neurons'] <= 30:
+        ranksep = "20"
+    elif 30 < params['hidden_neurons'] < 70:
+        ranksep = "40"
+    else:
+        ranksep = "60"
+
+    graph.attr(rankdir='LR', penwidth='0', ranksep=ranksep)
     graph.attr('node', shape='circle', style='filled')
 
     with graph.subgraph(name='cluster1') as a:
@@ -104,7 +107,7 @@ def draw_nn(params, model_path, epoch_num, x_train, y_train, x_test, y_test, sav
     )
 
     with Image.open(f'{save_path}{epoch_num}.png') as image:
-        image.thumbnail((1150, 1150), Image.Resampling.LANCZOS)
+        image.thumbnail((900, 900), Image.Resampling.LANCZOS)
         draw = ImageDraw.Draw(image)
         font = ImageFont.load_default(size=20)
         draw.text((10, 10), f"Epoch: {epoch_num}", fill=(255, 0, 0), font=font)
