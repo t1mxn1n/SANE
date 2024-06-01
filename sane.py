@@ -46,12 +46,16 @@ class Sane:
 
                     # accuracy = accuracy_score(y_true=y_train, y_pred=np.argmax(network_predict, axis=1))
                     save_model(self.hyperparameters["model_name"], network_schema)
-                    if curr_epoch == 0 or curr_epoch - epoch_last_save > 2:
+                    if curr_epoch == 0 or curr_epoch - epoch_last_save > self.hyperparameters["freq_update_topology"]:
                         save_model(f"graph_model_{curr_epoch}", network_schema, "temp/graph/models")
                         draw_nn(self.hyperparameters,
                                 f"temp/graph/models/graph_model_{curr_epoch}",
                                 curr_epoch,
-                                save_path="temp/graph/img/")
+                                x_train,
+                                y_train,
+                                x_test,
+                                y_test,
+                                save_path="temp/graph/img/g")
 
                     epoch_last_save = curr_epoch
                     # print(curr_epoch, loss_nn, accuracy)

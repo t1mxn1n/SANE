@@ -3,7 +3,28 @@ import re
 import numpy as np
 import shutil
 from graphviz import Digraph
-import pydot
+from PIL import Image, ImageDraw, ImageFont
+from sklearn.metrics import accuracy_score, log_loss, f1_score
+from model import Model
+
+
+def evaluate_model(x_train, y_train, x_test, y_test, hyperparameters):
+    best_model = np.load(f"models/{hyperparameters['model_name']}.npy")
+
+    nn = Model(best_model, hyperparameters)
+
+    predictions_train = nn.forward_propagation(x_train)
+    predictions_test = nn.forward_propagation(x_test)
+
+    loss_train = log_loss(y_train, predictions_train)
+    accuracy_train = accuracy_score(y_train, np.argmax(predictions_train, axis=1))
+
+    loss_test = log_loss(y_test, predictions_test)
+    accuracy_test = accuracy_score(y_test, np.argmax(predictions_test, axis=1))
+
+    # print(f"Loss test = {loss}")
+    # print(f"Accuracy = {accuracy_score(y_test, np.argmax(predictions, axis=1))}")
+    return loss_train, loss_test, accuracy_train, accuracy_test
 
 
 def save_model(model_name, array, dir_save="models"):
@@ -30,27 +51,11 @@ def read_dt(filename):
     return np.array(x), np.array(y)
 
 
-def relu(x):
-    for i in range(x.shape[0]):
-        for j in range(x.shape[1]):
-            if x[i, j] < 0:
-                x[i, j] = 0
-    return x
-
-
-def softmax(x):
-    out = np.zeros(x.shape)
-    for i in range(x.shape[0]):
-        for j in range(x.shape[1]):
-            out[i, j] = np.exp(x[i, j]) / np.sum(np.exp(x[i]))
-    return out
-
-
 def link_edges(graph, starts, ends):
     ...
 
 
-def draw_nn(params, model_path, epoch_num, save_path="Graph"):
+def draw_nn(params, model_path, epoch_num, x_train, y_train, x_test, y_test, save_path="Graph"):
     model = np.load(f"{model_path}.npy")
     graph = Digraph(comment='NN', strict=True)
 
@@ -94,14 +99,32 @@ def draw_nn(params, model_path, epoch_num, save_path="Graph"):
     graph.format = 'png'
     graph.render(f'{save_path}{epoch_num}', cleanup=True)
 
+    loss_train, loss_test, accuracy_train, accuracy_test = evaluate_model(
+        x_train, y_train, x_test, y_test, params
+    )
+
+    with Image.open(f'{save_path}{epoch_num}.png') as image:
+        image.thumbnail((1150, 1150), Image.Resampling.LANCZOS)
+        draw = ImageDraw.Draw(image)
+        font = ImageFont.load_default(size=20)
+        draw.text((10, 10), f"Epoch: {epoch_num}", fill=(255, 0, 0), font=font)
+        draw.text((10, 30), f"Train loss: {round(loss_train, 2)}", fill=(255, 0, 0), font=font)
+        draw.text((10, 50), f"Val loss: {round(loss_test, 2)}", fill=(255, 0, 0), font=font)
+        draw.text((10, 70), f"Train accuracy: {round(accuracy_train, 2)}", fill=(255, 0, 0), font=font)
+        draw.text((10, 90), f"Val accuracy: {round(accuracy_test, 2)}", fill=(255, 0, 0), font=font)
+
+        image.save(f'temp/graph/img_pil/{epoch_num}.png')
+
 
 def clear_temp_files():
     try:
-        shutil.rmtree("temp")
+        if os.path.exists("temp"):
+            shutil.rmtree("temp")
         os.mkdir("temp")
         os.mkdir("temp/graph")
         os.mkdir("temp/graph/models")
         os.mkdir("temp/graph/img")
+        os.mkdir("temp/graph/img_pil")
         print("Временные файлы очищены, запуск алгоритма...")
     except Exception as e:
         print(f"Ошибка при очищении временных файлов {e}")

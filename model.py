@@ -1,6 +1,20 @@
 import numpy as np
 
-from utils import relu, softmax
+
+def relu(x):
+    for i in range(x.shape[0]):
+        for j in range(x.shape[1]):
+            if x[i, j] < 0:
+                x[i, j] = 0
+    return x
+
+
+def softmax(x):
+    out = np.zeros(x.shape)
+    for i in range(x.shape[0]):
+        for j in range(x.shape[1]):
+            out[i, j] = np.exp(x[i, j]) / np.sum(np.exp(x[i]))
+    return out
 
 
 class Model:

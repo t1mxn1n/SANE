@@ -1,15 +1,13 @@
-import pprint
-
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_iris, load_wine
-from sklearn.metrics import accuracy_score, log_loss, f1_score
+
 from sklearn.preprocessing import normalize
 from sklearn.utils import shuffle
 
 from sane import Sane
-from model import Model
-from utils import read_dt, save_model, draw_nn, clear_temp_files
+
+from utils import read_dt, save_model, draw_nn, clear_temp_files, evaluate_model
 
 np.random.seed(seed=42)
 
@@ -46,11 +44,12 @@ def update_hyperparams(hyperparameters, return_dataset=True):
     hyperparameters["model_name"] = hyperparameters["dataset"] + "_model"
     hyperparameters["input_neurons"] = x.shape[1]
     hyperparameters["output_neurons"] = np.unique(y).shape[0]
+
     if return_dataset:
         return x_train, x_test, y_train, y_test
 
 
-def run(hyperparameters=None):
+def run(hyperparameters=None, result_queue=None):
 
     if hyperparameters is None:
         hyperparameters = hyperparameters_default
@@ -65,21 +64,15 @@ def run(hyperparameters=None):
     )
 
     genetic.train(x_train, y_train, x_test, y_test)
-    evaluate_model(x_test, y_test, hyperparameters)
 
+    loss_train, loss_test, accuracy_train, accuracy_test = evaluate_model(
+        x_train, y_train, x_test, y_test, hyperparameters
+    )
 
-def evaluate_model(x_test, y_test, hyperparameters):
-    best_model = np.load(f"models/{hyperparameters['model_name']}.npy")
+    if result_queue:
+        result_queue.put((loss_train, loss_test, accuracy_train, accuracy_test))
 
-    from pprint import pprint
-    # print(best_model.shape)
-    # pprint(best_model[0])
-
-    nn = Model(best_model, hyperparameters)
-    predictions = nn.forward_propagation(x_test)
-
-    print(f"Loss test = {log_loss(y_test, predictions)}")
-    print(f"Accuracy = {accuracy_score(y_test, np.argmax(predictions, axis=1))}")
+    return x_train, x_test, y_train, y_test
 
 
 if __name__ == '__main__':
