@@ -1,10 +1,13 @@
 import os
 import re
-import numpy as np
 import shutil
-from graphviz import Digraph
+
+import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from sklearn.metrics import accuracy_score, log_loss, f1_score
+from graphviz import Digraph
+from matplotlib.figure import Figure
+from sklearn.metrics import accuracy_score, log_loss
+
 from model import Model
 
 
@@ -22,8 +25,6 @@ def evaluate_model(x_train, y_train, x_test, y_test, hyperparameters):
     loss_test = log_loss(y_test, predictions_test)
     accuracy_test = accuracy_score(y_test, np.argmax(predictions_test, axis=1))
 
-    # print(f"Loss test = {loss}")
-    # print(f"Accuracy = {accuracy_score(y_test, np.argmax(predictions, axis=1))}")
     return loss_train, loss_test, accuracy_train, accuracy_test
 
 
@@ -106,7 +107,7 @@ def draw_nn(params, model_path, epoch_num, x_train, y_train, x_test, y_test, sav
         x_train, y_train, x_test, y_test, params
     )
 
-    with Image.open(f'{save_path}{epoch_num}.png') as image:
+    with Image.open(f'{save_path}{epoch_num}.{graph.format}') as image:
         image.thumbnail((900, 900), Image.Resampling.LANCZOS)
         draw = ImageDraw.Draw(image)
         font = ImageFont.load_default(size=20)
@@ -118,6 +119,8 @@ def draw_nn(params, model_path, epoch_num, x_train, y_train, x_test, y_test, sav
 
         image.save(f'temp/graph/img_pil/{epoch_num}.png')
 
+    os.remove(f'{save_path}{epoch_num}.{graph.format}')
+
 
 def clear_temp_files():
     try:
@@ -125,9 +128,9 @@ def clear_temp_files():
             shutil.rmtree("temp")
         os.mkdir("temp")
         os.mkdir("temp/graph")
-        os.mkdir("temp/graph/models")
         os.mkdir("temp/graph/img")
         os.mkdir("temp/graph/img_pil")
+        os.mkdir("temp/graph/metrics_result_plot")
         print("Временные файлы очищены, запуск алгоритма...")
     except Exception as e:
         print(f"Ошибка при очищении временных файлов {e}")
@@ -136,3 +139,26 @@ def clear_temp_files():
 def extract_number(filename):
     match = re.search(r'\d+', filename)
     return int(match.group()) if match else float('inf')
+
+
+def make_charts(graph_data, save_img=False):
+    figure = Figure(figsize=(12, 5), dpi=100)
+
+    ax_loss = figure.add_subplot(1, 2, 1)
+    ax_loss.plot(graph_data["loss_array_train"], color="blue", label="train")
+    ax_loss.plot(graph_data["loss_array_test"], color="orange", label="val")
+    ax_loss.set_xlabel("epoch")
+    ax_loss.set_ylabel("loss")
+    ax_loss.legend()
+
+    ax_accuracy = figure.add_subplot(1, 2, 2)
+    ax_accuracy.plot(graph_data["acc_array_train"], color="blue", label="train")
+    ax_accuracy.plot(graph_data["acc_array_test"], color="orange", label="val")
+    ax_accuracy.set_xlabel("epoch")
+    ax_accuracy.set_ylabel("accuracy")
+    ax_accuracy.legend()
+
+    if save_img:
+        figure.savefig("temp/graph/metrics_result_plot/metrics.png")
+
+    return figure

@@ -1,24 +1,23 @@
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_iris, load_wine
-
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import normalize
 from sklearn.utils import shuffle
 
 from sane import Sane
-
-from utils import read_dt, save_model, draw_nn, clear_temp_files, evaluate_model
+from utils import read_dt, clear_temp_files, evaluate_model
 
 np.random.seed(seed=42)
 
 hyperparameters_default = {
-            "dataset": "iris",
-            "population_size": 2000,
-            "hidden_neurons": 30,
-            "epoch": 500,
-            "neuron_connections": 5,
-            "epoch_with_no_progress": 30
-        }
+    "dataset": "iris",
+    "population_size": 2000,
+    "hidden_neurons": 30,
+    "epoch": 500,
+    "neuron_connections": 5,
+    "epoch_with_no_progress": 10,
+    "freq_update_topology": 5
+}
 
 
 def get_dataset(dataset_name):
@@ -50,7 +49,6 @@ def update_hyperparams(hyperparameters, return_dataset=True):
 
 
 def run(hyperparameters=None, result_queue=None):
-
     if hyperparameters is None:
         hyperparameters = hyperparameters_default
 
@@ -71,17 +69,12 @@ def run(hyperparameters=None, result_queue=None):
 
     if result_queue:
         result_queue.put((loss_train, loss_test, accuracy_train, accuracy_test, history))
-
-    return x_train, x_test, y_train, y_test
+    else:
+        print(f"loss train: {loss_train}")
+        print(f"loss test: {loss_test}")
+        print(f"accuracy train: {accuracy_train}")
+        print(f"accuracy test: {accuracy_test}")
 
 
 if __name__ == '__main__':
-    ...
-    # h = get_hyperparams()
     run()
-    # model = np.load(f"models/{hyperparameters['model_name']}.npy")
-    # model = np.load(f"temp/graph/models/graph_model_0.npy")
-    # pprint.pprint(model)
-    # draw_nn(hyperparameters, f"temp/graph/models/graph_model_0", "test")
-
-    # evaluate_model(h[1], h[3])

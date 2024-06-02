@@ -1,9 +1,9 @@
 import numpy as np
-from sklearn.metrics import log_loss, f1_score, accuracy_score
+from sklearn.metrics import log_loss
 from tqdm import tqdm
 
 from model import Model
-from utils import save_model, draw_nn, evaluate_model
+from utils import save_model, draw_nn, evaluate_model, make_charts
 
 
 class Sane:
@@ -51,13 +51,9 @@ class Sane:
                 loss_nn = log_loss(y_train, network_predict)
                 if loss_nn < best_loss:
 
-                    # accuracy = accuracy_score(y_true=y_train, y_pred=np.argmax(network_predict, axis=1))
                     save_model(self.hyperparameters["model_name"], network_schema)
-                    # if curr_epoch == 0 or curr_epoch - epoch_last_save > self.hyperparameters["freq_update_topology"]:
-                        # save_model(f"graph_model_{curr_epoch}", network_schema, "temp/graph/models")
 
                     epoch_last_save = curr_epoch
-                    # print(curr_epoch, loss_nn, accuracy)
                     best_loss = loss_nn
 
                 # 5. Добавление приспособленности к использованным нейронам
@@ -102,6 +98,7 @@ class Sane:
             pbar.update(1)
             curr_epoch += 1
         pbar.close()
+        make_charts(history, save_img=True)
         return history
 
     def mutation(self, population):

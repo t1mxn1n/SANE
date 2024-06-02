@@ -1,15 +1,15 @@
-import tkinter as tk
 import os
-import threading
 import queue
+import threading
 import time
+import tkinter as tk
 from tkinter import ttk
+
 from PIL import Image, ImageTk, ImageFile, UnidentifiedImageError
-from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from main import run
-from utils import extract_number, clear_temp_files
+from utils import extract_number, make_charts
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -173,20 +173,7 @@ class SaneApp:
         report_window = tk.Toplevel(self.root)
         report_window.title("Результат")
 
-        figure = Figure(figsize=(12, 5), dpi=100)
-        ax_loss = figure.add_subplot(1, 2, 1)
-        ax_loss.plot(graph_data["loss_array_train"], color="blue", label="train")
-        ax_loss.plot(graph_data["loss_array_test"], color="orange", label="val")
-        ax_loss.set_xlabel("epoch")
-        ax_loss.set_ylabel("loss")
-        ax_loss.legend()
-
-        ax_accuracy = figure.add_subplot(1, 2, 2)
-        ax_accuracy.plot(graph_data["acc_array_train"], color="blue", label="train")
-        ax_accuracy.plot(graph_data["acc_array_test"], color="orange", label="val")
-        ax_accuracy.set_xlabel("epoch")
-        ax_accuracy.set_ylabel("accuracy")
-        ax_accuracy.legend()
+        figure = make_charts(graph_data)
 
         # Добавляем информацию в новое окно
         new_label1 = ttk.Label(report_window, text=f"Loss train: {metrics_eval[0]}")
