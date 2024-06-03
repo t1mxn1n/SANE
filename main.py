@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from sklearn.datasets import load_iris, load_wine
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import normalize
@@ -60,15 +61,16 @@ def run(hyperparameters=None, result_queue=None):
     genetic = Sane(
         hyperparameters
     )
-
+    time_start = time.time()
     history = genetic.train(x_train, y_train, x_test, y_test)
+    time_spent = time.time() - time_start
 
     loss_train, loss_test, accuracy_train, accuracy_test = evaluate_model(
         x_train, y_train, x_test, y_test, hyperparameters
     )
 
     if result_queue:
-        result_queue.put((loss_train, loss_test, accuracy_train, accuracy_test, history))
+        result_queue.put((loss_train, loss_test, accuracy_train, accuracy_test, history, time_spent))
     else:
         print(f"loss train: {loss_train}")
         print(f"loss test: {loss_test}")

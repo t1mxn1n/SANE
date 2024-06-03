@@ -9,7 +9,7 @@ from PIL import Image, ImageTk, ImageFile, UnidentifiedImageError
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from main import run
-from utils import extract_number, make_charts
+from utils import extract_number, make_charts, clear_temp_files
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -96,6 +96,8 @@ class SaneApp:
         self.result_queue = queue.Queue()
 
     def reset_app(self):
+
+        clear_temp_files()
 
         self.start_button.config(state='normal')
         self.param0_combobox.config(state='normal')
@@ -194,7 +196,8 @@ class SaneApp:
                                                    f"Кол-во скрытых нейронов: {self.hyperparameters['hidden_neurons']}\n"
                                                    f"Кол-во эпох: {self.hyperparameters['epoch']}\n"
                                                    f"Кол-во связей нейрона: {self.hyperparameters['neuron_connections']}\n"
-                                                   f"Кол-во эпох для остановки без прогресса: {self.hyperparameters['epoch_with_no_progress']}")
+                                                   f"Кол-во эпох для остановки без прогресса: {self.hyperparameters['epoch_with_no_progress']}\n"
+                                                   f"Время работы НЭ алгоритма: {round(metrics_eval[5], 2)} сек.")
         new_label6.pack()
 
         canvas_frame = ttk.Frame(report_window)

@@ -26,12 +26,10 @@ class Model:
         self.output_neurons = hyperparameters["output_neurons"]
 
     def forward_propagation(self, x):
-
         w_hidden, w_output = self.make_weights()
-        # todo: сделать иначе
-        z1 = np.matmul(x, w_hidden)
+        z1 = np.dot(x, w_hidden)
         a1 = relu(z1)
-        z2 = np.matmul(a1, w_output)
+        z2 = np.dot(a1, w_output)
         a2 = softmax(z2)
         return a2
 
