@@ -131,7 +131,7 @@ def clear_temp_files():
         os.mkdir("temp/graph/img")
         os.mkdir("temp/graph/img_pil")
         os.mkdir("temp/graph/metrics_result_plot")
-        print("Временные файлы очищены, запуск алгоритма...")
+        print("Временные файлы очищены, ожидание запуска...")
     except Exception as e:
         print(f"Ошибка при очищении временных файлов {e}")
 
